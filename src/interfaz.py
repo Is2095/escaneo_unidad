@@ -45,7 +45,22 @@ def mostrar_resumen(resultado):
         print(f"{nombre + ':':<27}{cantidad_formateada:>10}")
 
     print("-" * 50)
-    print(f"Errores durante el escaneo: {len(resultado['errores'])}")
-    print("=" * 50)
 
-    
+    errores = resultado["errores"]
+
+    print(f"Errores durante el escaneo: {len(errores)}")
+
+    if errores:
+        print("\nDetalle de los errores:")
+
+        for numero, error in enumerate(errores, start=1):
+            ruta = error["ruta"]
+            mensaje = error["error"]
+
+            print(f"\n{numero}. Ruta: {ruta or 'No disponible'}")
+            print(f"   Motivo: {mensaje}")
+    else:
+        print("El escaneo finalizó sin errores.")
+
+    print("=" * 50)
+        
