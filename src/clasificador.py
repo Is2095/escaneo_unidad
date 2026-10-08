@@ -74,13 +74,11 @@ EXTENSIONES_BASES_DATOS = {
     ".accdb",
 }
 
-
 ARCHIVOS_SISTEMA = {
     "thumbs.db",
     "desktop.ini",
     ".ds_store",
 }
-
 
 def clasificar_archivo(ruta):
     """
@@ -123,3 +121,30 @@ def clasificar_archivo(ruta):
         return "bases_datos"
 
     return "otros"
+
+def clasificar_archivos(archivos):
+    """
+    Clasifica una colección de archivos y los agrupa por categoría.
+
+    No modifica ni abre ningún archivo.
+    """
+
+    categorias = {
+        "fotografias": [],
+        "videos": [],
+        "audio": [],
+        "documentos": [],
+        "hojas_calculo": [],
+        "presentaciones": [],
+        "comprimidos": [],
+        "bases_datos": [],
+        "sistema": [],
+        "otros": [],
+    }
+
+    for archivo in archivos:
+        categoria = clasificar_archivo(archivo)
+        categorias[categoria].append(Path(archivo))
+
+    return categorias
+
