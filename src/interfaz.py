@@ -34,15 +34,30 @@ def mostrar_resumen(resultado):
         f"{resultado['total_archivos']:,}".replace(",", ".")
     )
 
+    tamano_total_bytes = resultado["tamano_total_bytes"]
+    tamano_total_mb = tamano_total_bytes / (1024 ** 2)
+
+    print(
+        f"Tamaño total de archivos: "
+        f"{tamano_total_mb:,.2f} MB".replace(",", "X").replace(".", ",").replace("X", ".")
+    )
+
     print("\nArchivos por categoría:")
-    print("-" * 50)
+    print("-" * 70)
 
     for categoria, nombre in nombres_categorias.items():
         cantidad = resultado["cantidades_por_categoria"][categoria]
 
         cantidad_formateada = f"{cantidad:,}".replace(",", ".")
 
-        print(f"{nombre + ':':<27}{cantidad_formateada:>10}")
+        tamano_bytes = resultado["tamanos_por_categoria_bytes"][categoria]
+        tamano_mb = tamano_bytes / (1024 ** 2)
+
+        print(
+            f"{nombre + ':':<25}"
+            f"{cantidad_formateada:>10} archivos"
+            f"{tamano_mb:>12.2f} MB"
+        )
 
     print("-" * 50)
 
