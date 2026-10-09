@@ -83,8 +83,37 @@ def mostrar_resumen(resultado):
                 f"  ... y {restantes} directorios más "
                 f"que no se muestran."
             )
+
     else:
         print("  No se encontraron subdirectorios.")
+
+    detalle_directorios = resultado["detalle_directorios"]
+
+    if directorios:
+        print("\nDetalle de carpetas:")
+        print("-" * 70)
+
+        for numero, directorio in enumerate(
+            directorios[:limite_directorios],
+            start=1
+        ):
+            detalle = detalle_directorios.get(directorio)
+
+            if detalle is None:
+                continue
+
+            print(f"\n{numero}. {directorio}")
+            print(f"   Archivos directos: {detalle['archivos']}")
+            print(
+                "   Subdirectorios directos: "
+                f"{detalle['subdirectorios']}"
+            )
+
+        if len(directorios) > limite_directorios:
+            print(
+                f"\nSe omitieron {len(directorios) - limite_directorios} "
+                "carpetas del detalle."
+            )
 
     print("\nArchivos por categoría:")
     print("-" * 70)

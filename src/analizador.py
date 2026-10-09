@@ -1,16 +1,14 @@
-from src.escaneo import escanear_directorio
-from src.clasificador import clasificar_archivos
-
-from pathlib import Path
 
 from src.escaneo import escanear_directorio
 from src.clasificador import clasificar_archivos
+
 
 def analizar_unidad(ruta):
     """
     Escanea una unidad o directorio y clasifica sus archivos.
 
     Calcula el tamaño de los archivos sin abrir su contenido.
+    Cuenta los archivos y subdirectorios directos de cada carpeta.
     No modifica archivos ni directorios de origen.
     """
 
@@ -23,6 +21,44 @@ def analizar_unidad(ruta):
     cantidad_archivos = len(resultado_escaneo["archivos"])
     cantidad_directorios = len(resultado_escaneo["directorios"])
 
+    errores = list(resultado_escaneo["errores"])
+    detalle_directorios = {}
+
+    for directorio in resultado_escaneo["directorios"]:
+        try:
+            elementos = list(directorio.iterdir())
+
+            archivos_directos = 0
+            subdirectorios_directos = 0
+
+            for elemento in elementos:
+                try:
+                    if elemento.is_file():
+                        archivos_directos += 1
+                    elif elemento.is_dir():
+                        subdirectorios_directos += 1
+
+                except OSError as error:
+                    errores.append(
+                        {
+                            "ruta": elemento,
+                            "error": str(error),
+                        }
+                    )
+
+            detalle_directorios[directorio] = {
+                "archivos": archivos_directos,
+                "subdirectorios": subdirectorios_directos,
+            }
+
+        except OSError as error:
+            errores.append(
+                {
+                    "ruta": directorio,
+                    "error": str(error),
+                }
+            )
+
     cantidades_por_categoria = {
         categoria: len(archivos)
         for categoria, archivos in archivos_por_categoria.items()
@@ -33,7 +69,6 @@ def analizar_unidad(ruta):
         for categoria in archivos_por_categoria
     }
 
-    errores = list(resultado_escaneo["errores"])
     tamano_total_bytes = 0
 
     for categoria, archivos in archivos_por_categoria.items():
@@ -56,6 +91,7 @@ def analizar_unidad(ruta):
     return {
         "ruta_analizada": str(ruta),
         "directorios": resultado_escaneo["directorios"],
+        "detalle_directorios": detalle_directorios,
         "archivos": resultado_escaneo["archivos"],
         "errores": errores,
         "archivos_por_categoria": archivos_por_categoria,

@@ -96,3 +96,26 @@ def test_analizar_unidad_registra_error_al_consultar_tamano(
     assert len(resultado["errores"]) == 1
     assert resultado["errores"][0]["ruta"] == foto
     assert "Acceso denegado" in resultado["errores"][0]["error"]  
+
+def test_analizar_unidad_cuenta_contenido_directo_de_directorios(
+    tmp_path,
+):
+    carpeta_a = tmp_path / "carpeta_a"
+    carpeta_a.mkdir()
+
+    (carpeta_a / "foto.jpg").touch()
+    (carpeta_a / "documento.pdf").touch()
+
+    subcarpeta = carpeta_a / "subcarpeta"
+    subcarpeta.mkdir()
+    (subcarpeta / "video.mp4").touch()
+
+    resultado = analizar_unidad(tmp_path)
+
+    detalle = resultado["detalle_directorios"]
+
+    assert detalle[carpeta_a]["archivos"] == 2
+    assert detalle[carpeta_a]["subdirectorios"] == 1
+
+    assert detalle[subcarpeta]["archivos"] == 1
+    assert detalle[subcarpeta]["subdirectorios"] == 0

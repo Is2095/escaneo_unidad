@@ -106,4 +106,26 @@ def test_formatear_tamano_en_gigabytes():
 def test_formatear_tamano_cero():
     assert formatear_tamano(0) == "0 bytes"
 
-    
+def test_mostrar_resumen_incluye_detalle_de_carpetas(
+    tmp_path,
+    capsys,
+):
+    carpeta = tmp_path / "fotos"
+    carpeta.mkdir()
+
+    (carpeta / "foto1.jpg").touch()
+    (carpeta / "foto2.jpg").touch()
+
+    subcarpeta = carpeta / "vacaciones"
+    subcarpeta.mkdir()
+
+    resultado = analizar_unidad(tmp_path)
+
+    mostrar_resumen(resultado)
+
+    salida = capsys.readouterr().out
+
+    assert "Detalle de carpetas:" in salida
+    assert str(carpeta) in salida
+    assert "Archivos directos: 2" in salida
+    assert "Subdirectorios directos: 1" in salida   
