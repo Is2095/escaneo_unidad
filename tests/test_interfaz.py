@@ -1,6 +1,6 @@
 from src.analizador import analizar_unidad
 from src.interfaz import mostrar_resumen
-
+from src.interfaz import formatear_tamano
 
 def test_mostrar_resumen_incluye_la_ruta(tmp_path, capsys):
     resultado = analizar_unidad(tmp_path)
@@ -90,3 +90,20 @@ def test_mostrar_resumen_con_errores_muestra_detalles(
     assert "Acceso denegado" in salida
     assert "otra_carpeta" in salida
     assert "Error de entrada/salida" in salida   
+
+def test_formatear_tamano_en_bytes():
+    assert formatear_tamano(850) == "850 bytes"
+
+def test_formatear_tamano_en_kilobytes():
+    assert formatear_tamano(1024) == "1,00 KB"
+
+def test_formatear_tamano_en_megabytes():
+    assert formatear_tamano(1572864) == "1,50 MB"
+
+def test_formatear_tamano_en_gigabytes():
+    assert formatear_tamano(1073741824) == "1,00 GB"
+
+def test_formatear_tamano_cero():
+    assert formatear_tamano(0) == "0 bytes"
+
+    
