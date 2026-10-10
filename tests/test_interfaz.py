@@ -128,4 +128,28 @@ def test_mostrar_resumen_incluye_detalle_de_carpetas(
     assert "Detalle de carpetas:" in salida
     assert str(carpeta) in salida
     assert "Archivos directos: 2" in salida
-    assert "Subdirectorios directos: 1" in salida   
+    assert "Subdirectorios directos: 1" in salida 
+
+
+def test_mostrar_resumen_incluye_detalle_de_archivos(
+    tmp_path,
+    capsys,
+):
+    carpeta = tmp_path / "fotos"
+    carpeta.mkdir()
+
+    foto = carpeta / "paisaje.JPG"
+    foto.write_bytes(b"12345")
+
+    resultado = analizar_unidad(tmp_path)
+
+    mostrar_resumen(resultado)
+
+    salida = capsys.readouterr().out
+
+    assert "Detalle de archivos por carpeta:" in salida
+    assert str(carpeta) in salida
+    assert "paisaje.JPG" in salida
+    assert "Fotografías" in salida
+    assert "5 bytes" in salida
+      

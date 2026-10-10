@@ -96,6 +96,9 @@ def test_analizar_unidad_registra_error_al_consultar_tamano(
     assert len(resultado["errores"]) == 1
     assert resultado["errores"][0]["ruta"] == foto
     assert "Acceso denegado" in resultado["errores"][0]["error"]  
+    assert len(resultado["detalle_archivos"]) == 1
+    assert resultado["detalle_archivos"][0]["nombre"] == "foto.jpg"
+    assert resultado["detalle_archivos"][0]["tamano_bytes"] is None
 
 def test_analizar_unidad_cuenta_contenido_directo_de_directorios(
     tmp_path,
@@ -119,3 +122,53 @@ def test_analizar_unidad_cuenta_contenido_directo_de_directorios(
 
     assert detalle[subcarpeta]["archivos"] == 1
     assert detalle[subcarpeta]["subdirectorios"] == 0
+
+def test_analizar_unidad_incluye_detalle_de_archivos(tmp_path):
+    foto = tmp_path / "foto.jpg"
+    foto.write_bytes(b"12345")
+
+    resultado = analizar_unidad(tmp_path)
+
+    detalle_archivos = resultado["detalle_archivos"]
+
+    assert len(detalle_archivos) == 1
+
+    detalle = detalle_archivos[0]
+
+    assert detalle["ruta"] == foto
+    assert detalle["nombre"] == "foto.jpg"
+    assert detalle["extension"] == ".jpg"
+    assert detalle["directorio"] == tmp_path
+    assert detalle["tamano_bytes"] == 5
+    assert detalle["categoria"] == "fotografias"
+
+def test_analizar_unidad_detalla_archivos_de_distintas_categorias(
+    tmp_path,
+):
+    foto = tmp_path / "foto.JPG"
+    documento = tmp_path / "documento.pdf"
+    archivo_desconocido = tmp_path / "datos.xyz"
+
+    foto.write_bytes(b"123")
+    documento.write_bytes(b"12345")
+    archivo_desconocido.write_bytes(b"1234567")
+
+    resultado = analizar_unidad(tmp_path)
+
+    detalles = {
+        detalle["nombre"]: detalle
+        for detalle in resultado["detalle_archivos"]
+    }
+
+    assert len(detalles) == 3
+
+    assert detalles["foto.JPG"]["extension"] == ".jpg"
+    assert detalles["foto.JPG"]["categoria"] == "fotografias"
+    assert detalles["foto.JPG"]["tamano_bytes"] == 3
+
+    assert detalles["documento.pdf"]["categoria"] == "documentos"
+    assert detalles["documento.pdf"]["tamano_bytes"] == 5
+
+    assert detalles["datos.xyz"]["categoria"] == "otros"
+    assert detalles["datos.xyz"]["tamano_bytes"] == 7
+    

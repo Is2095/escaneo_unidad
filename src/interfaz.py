@@ -115,6 +115,76 @@ def mostrar_resumen(resultado):
                 "carpetas del detalle."
             )
 
+
+    detalle_archivos = resultado["detalle_archivos"]
+    archivos_por_directorio = {}
+
+    for detalle in detalle_archivos:
+        directorio = detalle["directorio"]
+
+        if directorio not in archivos_por_directorio:
+            archivos_por_directorio[directorio] = []
+
+        archivos_por_directorio[directorio].append(detalle)
+
+    limite_carpetas = 20
+    limite_archivos = 20
+
+    print("\nDetalle de archivos por carpeta:")
+    print("-" * 70)
+
+    if not archivos_por_directorio:
+        print("  No se encontraron archivos.")
+    else:
+        directorios_con_archivos = list(
+            archivos_por_directorio.items()
+        )
+
+        for numero, (directorio, archivos) in enumerate(
+            directorios_con_archivos[:limite_carpetas],
+            start=1,
+        ):
+            print(f"\n{numero}. Carpeta: {directorio}")
+
+            for archivo in archivos[:limite_archivos]:
+                nombre = archivo["nombre"]
+                categoria = nombres_categorias.get(
+                    archivo["categoria"],
+                    "Otros",
+                )
+
+                tamano_bytes = archivo["tamano_bytes"]
+
+                if tamano_bytes is None:
+                    tamano = "No disponible"
+                else:
+                    tamano = formatear_tamano(tamano_bytes)
+
+                print(
+                    f"   - {nombre} | "
+                    f"{categoria} | {tamano}"
+                )
+
+            archivos_omitidos = len(archivos) - limite_archivos
+
+            if archivos_omitidos > 0:
+                print(
+                    f"   ... y {archivos_omitidos} archivos más "
+                    "omitidos en esta carpeta."
+                )
+
+        carpetas_omitidas = (
+            len(directorios_con_archivos) - limite_carpetas
+        )
+
+        if carpetas_omitidas > 0:
+            print(
+                f"\nSe omitieron {carpetas_omitidas} carpetas "
+                "del detalle de archivos."
+            )
+
+
+
     print("\nArchivos por categoría:")
     print("-" * 70)
 

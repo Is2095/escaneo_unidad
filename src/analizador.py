@@ -69,10 +69,21 @@ def analizar_unidad(ruta):
         for categoria in archivos_por_categoria
     }
 
+
     tamano_total_bytes = 0
+    detalle_archivos = []
 
     for categoria, archivos in archivos_por_categoria.items():
         for archivo in archivos:
+            detalle = {
+                "ruta": archivo,
+                "nombre": archivo.name,
+                "extension": archivo.suffix.lower(),
+                "directorio": archivo.parent,
+                "tamano_bytes": None,
+                "categoria": categoria,
+            }
+
             try:
                 tamano = archivo.stat().st_size
 
@@ -83,7 +94,12 @@ def analizar_unidad(ruta):
                         "error": str(error),
                     }
                 )
+
+                detalle_archivos.append(detalle)
                 continue
+
+            detalle["tamano_bytes"] = tamano
+            detalle_archivos.append(detalle)
 
             tamanos_por_categoria[categoria] += tamano
             tamano_total_bytes += tamano
@@ -93,6 +109,7 @@ def analizar_unidad(ruta):
         "directorios": resultado_escaneo["directorios"],
         "detalle_directorios": detalle_directorios,
         "archivos": resultado_escaneo["archivos"],
+        "detalle_archivos": detalle_archivos,
         "errores": errores,
         "archivos_por_categoria": archivos_por_categoria,
         "cantidades_por_categoria": cantidades_por_categoria,
