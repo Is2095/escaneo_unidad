@@ -171,4 +171,34 @@ def test_analizar_unidad_detalla_archivos_de_distintas_categorias(
 
     assert detalles["datos.xyz"]["categoria"] == "otros"
     assert detalles["datos.xyz"]["tamano_bytes"] == 7
-    
+
+def test_analizar_unidad_ordena_archivos_por_tamano(
+    tmp_path,
+):
+    from src.analizador import analizar_unidad
+
+    (tmp_path / "pequeno.txt").write_bytes(b"123")
+    (tmp_path / "grande.txt").write_bytes(b"1234567890")
+    (tmp_path / "mediano.txt").write_bytes(b"123456")
+
+    resultado = analizar_unidad(tmp_path)
+
+    inventario = sorted(
+        resultado["detalle_archivos"],
+        key=lambda archivo: (
+            archivo["tamano_bytes"] is not None,
+            archivo["tamano_bytes"] or 0,
+        ),
+        reverse=True,
+    )
+
+    nombres = [
+        archivo["nombre"]
+        for archivo in inventario
+    ]
+
+    assert nombres == [
+        "grande.txt",
+        "mediano.txt",
+        "pequeno.txt",
+    ]

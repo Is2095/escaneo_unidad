@@ -183,7 +183,46 @@ def mostrar_resumen(resultado):
                 "del detalle de archivos."
             )
 
+    inventario = resultado["inventario_por_tamano"]
+    limite_inventario = 20
 
+    print("\nARCHIVOS MÁS GRANDES")
+    print("-" * 70)
+
+    if inventario:
+        for numero, archivo in enumerate(
+            inventario[:limite_inventario],
+            start=1,
+        ):
+            nombre = archivo["nombre"]
+            ruta = archivo["ruta"]
+            categoria = nombres_categorias.get(
+                archivo["categoria"],
+                "Otros",
+            )
+
+            tamano_bytes = archivo["tamano_bytes"]
+
+            if tamano_bytes is None:
+                tamano = "No disponible"
+            else:
+                tamano = formatear_tamano(tamano_bytes)
+
+            print(
+                f"{numero:>2}. {tamano:>14} | "
+                f"{categoria:<20} | {nombre}"
+            )
+            print(f"    Ruta: {ruta}")
+
+        omitidos = len(inventario) - limite_inventario
+
+        if omitidos > 0:
+            print(
+                f"... y {omitidos} archivos más "
+                "que no se muestran."
+            )
+    else:
+        print("No se encontraron archivos.")
 
     print("\nArchivos por categoría:")
     print("-" * 70)

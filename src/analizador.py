@@ -104,12 +104,23 @@ def analizar_unidad(ruta):
             tamanos_por_categoria[categoria] += tamano
             tamano_total_bytes += tamano
 
+    
+    inventario_por_tamano = sorted(
+        detalle_archivos,
+        key=lambda archivo: (
+            archivo["tamano_bytes"] is not None,
+            archivo["tamano_bytes"] or 0,
+        ),
+        reverse=True,
+    )
+
     return {
         "ruta_analizada": str(ruta),
         "directorios": resultado_escaneo["directorios"],
         "detalle_directorios": detalle_directorios,
         "archivos": resultado_escaneo["archivos"],
         "detalle_archivos": detalle_archivos,
+        "inventario_por_tamano": inventario_por_tamano,
         "errores": errores,
         "archivos_por_categoria": archivos_por_categoria,
         "cantidades_por_categoria": cantidades_por_categoria,
