@@ -1,6 +1,7 @@
-
 from src.escaneo import escanear_directorio
 from src.clasificador import clasificar_archivos
+from src.duplicados import encontrar_duplicados
+from src.errores import registrar_error
 
 
 def analizar_unidad(ruta):
@@ -14,14 +15,40 @@ def analizar_unidad(ruta):
 
     resultado_escaneo = escanear_directorio(ruta)
 
+    errores = list(resultado_escaneo["errores"])
+
     archivos_por_categoria = clasificar_archivos(
         resultado_escaneo["archivos"]
     )
 
     cantidad_archivos = len(resultado_escaneo["archivos"])
+
+    grupos_duplicados = encontrar_duplicados(
+        resultado_escaneo["archivos"],
+        errores=errores,
+    )
+
+    cantidad_grupos_duplicados = len(grupos_duplicados)
+
+    cantidad_archivos_duplicados = sum(
+        len(grupo)
+        for grupo in grupos_duplicados
+    )
+
     cantidad_directorios = len(resultado_escaneo["directorios"])
 
-    errores = list(resultado_escaneo["errores"])
+    espacio_duplicado_bytes = 0
+
+    for grupo in grupos_duplicados:
+        try:
+            tamano = grupo[0].stat().st_size
+
+        except OSError as error:
+            registrar_error(errores, grupo[0], error)
+            continue
+
+        espacio_duplicado_bytes += tamano * (len(grupo) - 1)
+
     detalle_directorios = {}
 
     for directorio in resultado_escaneo["directorios"]:
@@ -39,12 +66,7 @@ def analizar_unidad(ruta):
                         subdirectorios_directos += 1
 
                 except OSError as error:
-                    errores.append(
-                        {
-                            "ruta": elemento,
-                            "error": str(error),
-                        }
-                    )
+                    registrar_error(errores, elemento, error)
 
             detalle_directorios[directorio] = {
                 "archivos": archivos_directos,
@@ -52,12 +74,7 @@ def analizar_unidad(ruta):
             }
 
         except OSError as error:
-            errores.append(
-                {
-                    "ruta": directorio,
-                    "error": str(error),
-                }
-            )
+            registrar_error(errores, directorio, error)
 
     cantidades_por_categoria = {
         categoria: len(archivos)
@@ -68,7 +85,6 @@ def analizar_unidad(ruta):
         categoria: 0
         for categoria in archivos_por_categoria
     }
-
 
     tamano_total_bytes = 0
     detalle_archivos = []
@@ -88,12 +104,7 @@ def analizar_unidad(ruta):
                 tamano = archivo.stat().st_size
 
             except OSError as error:
-                errores.append(
-                    {
-                        "ruta": archivo,
-                        "error": str(error),
-                    }
-                )
+                registrar_error(errores, archivo, error)
 
                 detalle_archivos.append(detalle)
                 continue
@@ -103,7 +114,6 @@ def analizar_unidad(ruta):
 
             tamanos_por_categoria[categoria] += tamano
             tamano_total_bytes += tamano
-
     
     inventario_por_tamano = sorted(
         detalle_archivos,
@@ -128,4 +138,8 @@ def analizar_unidad(ruta):
         "total_archivos": cantidad_archivos,
         "tamano_total_bytes": tamano_total_bytes,
         "tamanos_por_categoria_bytes": tamanos_por_categoria,
+        "grupos_duplicados": grupos_duplicados,
+        "cantidad_grupos_duplicados": cantidad_grupos_duplicados,
+        "cantidad_archivos_duplicados": cantidad_archivos_duplicados,
+        "espacio_duplicado_bytes": espacio_duplicado_bytes,
     }

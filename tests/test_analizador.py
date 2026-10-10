@@ -1,4 +1,8 @@
-from src.analizador import analizar_unidad
+from src.analizador import (
+    analizar_unidad
+)
+from src.errores import registrar_error
+
 from pathlib import Path
 
 
@@ -202,3 +206,165 @@ def test_analizar_unidad_ordena_archivos_por_tamano(
         "mediano.txt",
         "pequeno.txt",
     ]
+
+def test_analizar_unidad_identifica_archivos_duplicados(tmp_path):
+    foto_original = tmp_path / "foto_original.jpg"
+    foto_copia = tmp_path / "foto_copia.jpg"
+
+    contenido = b"contenido identico de prueba"
+
+    foto_original.write_bytes(contenido)
+    foto_copia.write_bytes(contenido)
+
+    resultado = analizar_unidad(tmp_path)
+
+    assert resultado["cantidad_grupos_duplicados"] == 1
+    assert resultado["cantidad_archivos_duplicados"] == 2
+
+    grupos = resultado["grupos_duplicados"]
+
+    assert len(grupos) == 1
+    assert set(grupos[0]) == {foto_original, foto_copia}
+
+    assert resultado["espacio_duplicado_bytes"] == len(contenido)
+
+def test_analizar_unidad_no_identifica_archivos_distintos_como_duplicados(
+    tmp_path,
+):
+    archivo_a = tmp_path / "archivo_a.txt"
+    archivo_b = tmp_path / "archivo_b.txt"
+
+    archivo_a.write_bytes(b"contenido A")
+    archivo_b.write_bytes(b"contenido B diferente")
+
+    resultado = analizar_unidad(tmp_path)
+
+    assert resultado["grupos_duplicados"] == []
+    assert resultado["cantidad_grupos_duplicados"] == 0
+    assert resultado["cantidad_archivos_duplicados"] == 0
+    assert resultado["espacio_duplicado_bytes"] == 0
+
+def test_analizar_unidad_registra_error_al_calcular_espacio_duplicado(
+    tmp_path,
+    monkeypatch,
+):
+    from src import analizador
+
+    foto_a = tmp_path / "foto_a.jpg"
+    foto_b = tmp_path / "foto_b.jpg"
+
+    contenido = b"contenido duplicado"
+    foto_a.write_bytes(contenido)
+    foto_b.write_bytes(contenido)
+
+    stat_original = Path.stat
+    calculo_duplicados_iniciado = False
+
+    def encontrar_duplicados_simulado(archivos, errores=None):
+        nonlocal calculo_duplicados_iniciado
+        calculo_duplicados_iniciado = True
+        return [[foto_a, foto_b]]
+
+    def stat_con_error(self, *args, **kwargs):
+        if calculo_duplicados_iniciado and self == foto_a:
+            raise PermissionError(
+                "Acceso denegado al calcular duplicados"
+            )
+
+        return stat_original(self, *args, **kwargs)
+
+    monkeypatch.setattr(
+        analizador,
+        "encontrar_duplicados",
+        encontrar_duplicados_simulado,
+    )
+
+    monkeypatch.setattr(
+        Path,
+        "stat",
+        stat_con_error,
+    )
+
+    resultado = analizar_unidad(tmp_path)
+
+    assert resultado["cantidad_grupos_duplicados"] == 1
+    assert resultado["cantidad_archivos_duplicados"] == 2
+    assert resultado["espacio_duplicado_bytes"] == 0
+
+    errores_duplicados = [
+        error
+        for error in resultado["errores"]
+        if "calcular duplicados" in error["error"]
+    ]
+
+    assert len(errores_duplicados) >= 1
+    assert all(
+        error["ruta"] == foto_a
+        for error in errores_duplicados
+    )
+
+def test_registrar_error_evitar_repetidos_y_conservar_distintos(
+    tmp_path,
+):
+    errores = []
+    archivo = tmp_path / "foto.jpg"
+
+    registrar_error(errores, archivo, "Acceso denegado")
+    registrar_error(errores, archivo, "Acceso denegado")
+    registrar_error(errores, archivo, "Archivo no disponible")
+
+    assert len(errores) == 2
+
+    assert errores[0] == {
+        "ruta": archivo,
+        "error": "Acceso denegado",
+    }
+
+    assert errores[1] == {
+        "ruta": archivo,
+        "error": "Archivo no disponible",
+    }
+
+def test_analizar_unidad_registra_error_al_buscar_duplicados(
+    tmp_path,
+    monkeypatch,
+):
+    from src import duplicados
+
+    archivo_a = tmp_path / "archivo_a.txt"
+    archivo_b = tmp_path / "archivo_b.txt"
+    archivo_c = tmp_path / "archivo_c.txt"
+
+    contenido = b"contenido identico para la prueba"
+
+    archivo_a.write_bytes(contenido)
+    archivo_b.write_bytes(contenido)
+    archivo_c.write_bytes(contenido)
+
+    calcular_original = duplicados.calcular_sha256
+
+    def calcular_con_error(ruta, tamano_bloque=1024 * 1024):
+        if ruta == archivo_c:
+            raise OSError("Acceso denegado durante el hash")
+
+        return calcular_original(ruta, tamano_bloque)
+
+    monkeypatch.setattr(
+        duplicados,
+        "calcular_sha256",
+        calcular_con_error,
+    )
+
+    resultado = analizar_unidad(tmp_path)
+
+    assert resultado["cantidad_grupos_duplicados"] == 1
+    assert resultado["cantidad_archivos_duplicados"] == 2
+
+    errores_duplicados = [
+        error
+        for error in resultado["errores"]
+        if error["ruta"] == archivo_c
+        and error["error"] == "Acceso denegado durante el hash"
+    ]
+
+    assert len(errores_duplicados) == 1
