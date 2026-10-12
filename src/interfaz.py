@@ -244,6 +244,32 @@ def mostrar_resumen(resultado):
         )
 
     print("-" * 50)
+ 
+    print("\nDUPLICADOS EXACTOS")
+    print("-" * 50)
+
+    grupos_duplicados = resultado["grupos_duplicados"]
+    cantidad_grupos = resultado["cantidad_grupos_duplicados"]
+    cantidad_archivos = resultado["cantidad_archivos_duplicados"]
+    espacio_duplicado = resultado["espacio_duplicado_bytes"]
+
+    print(f"Grupos de duplicados: {cantidad_grupos}")
+    print(f"Archivos duplicados: {cantidad_archivos}")
+    print(
+        "Espacio potencialmente recuperable: "
+        f"{formatear_tamano(espacio_duplicado)}"
+    )
+
+    if grupos_duplicados:
+        print("\nDetalle de grupos duplicados:")
+
+        for numero, grupo in enumerate(grupos_duplicados, start=1):
+            print(f"\nGrupo {numero} ({len(grupo)} archivos):")
+
+            for archivo in grupo:
+                print(f"  - {archivo}")
+    else:
+        print("No se encontraron archivos duplicados exactos.")
 
     errores = resultado["errores"]
 

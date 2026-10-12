@@ -4,3 +4,5 @@ __pycache__/
 .pytest_cache/
 .vscode/
 .idea/
+/prueba_escaneo/
+/prueba_escaneo_sin_duplicados/

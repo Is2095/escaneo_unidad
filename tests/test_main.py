@@ -79,3 +79,42 @@ def test_main_ignora_espacios_alrededor_de_la_ruta(
 
     assert "RESUMEN DEL ESCANEO" in salida
     assert "Documentos:" in salida
+
+def test_main_no_copia_si_el_destino_ya_existe(
+    capsys,
+    monkeypatch,
+    tmp_path,
+):
+    origen = tmp_path / "origen"
+    destino = tmp_path / "destino"
+
+    origen.mkdir()
+    (origen / "foto.jpg").write_bytes(b"foto original")
+
+    destino.mkdir()
+    archivo_existente = destino / "documento.txt"
+    archivo_existente.write_text(
+        "contenido previo",
+        encoding="utf-8",
+    )
+
+    respuestas = iter([
+        str(origen),  # Ruta que se va a analizar
+        "s",           # Aceptar la copia
+        str(destino),  # Destino que ya existe
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(respuestas),
+    )
+
+    main()
+
+    salida = capsys.readouterr().out
+
+    assert "No se pudo iniciar la copia:" in salida
+    assert archivo_existente.read_text(encoding="utf-8") == "contenido previo"
+    assert (origen / "foto.jpg").read_bytes() == b"foto original"
+    assert not (destino / "foto.jpg").exists()
+    
