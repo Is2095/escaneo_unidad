@@ -10,6 +10,7 @@ def test_main_con_ruta_vacia(capsys, monkeypatch):
 
     assert "No se indicó ninguna ruta." in salida
 
+
 def test_main_con_ruta_inexistente(capsys, monkeypatch, tmp_path):
     ruta_inexistente = tmp_path / "no_existe"
 
@@ -24,6 +25,7 @@ def test_main_con_ruta_inexistente(capsys, monkeypatch, tmp_path):
 
     assert "Error:" in salida
     assert "no existe" in salida
+
 
 def test_main_con_ruta_que_es_un_archivo(capsys, monkeypatch, tmp_path):
     archivo = tmp_path / "archivo.txt"
@@ -41,6 +43,7 @@ def test_main_con_ruta_que_es_un_archivo(capsys, monkeypatch, tmp_path):
     assert "Error:" in salida
     assert "no es un directorio" in salida
 
+
 def test_main_con_ruta_valida(capsys, monkeypatch, tmp_path):
     archivo = tmp_path / "foto.jpg"
     archivo.touch()
@@ -57,6 +60,7 @@ def test_main_con_ruta_valida(capsys, monkeypatch, tmp_path):
     assert "RESUMEN DEL ESCANEO" in salida
     assert "Archivos encontrados:" in salida
     assert "Fotografías:" in salida
+
 
 def test_main_ignora_espacios_alrededor_de_la_ruta(
     capsys,
@@ -80,6 +84,7 @@ def test_main_ignora_espacios_alrededor_de_la_ruta(
     assert "RESUMEN DEL ESCANEO" in salida
     assert "Documentos:" in salida
 
+
 def test_main_no_copia_si_el_destino_ya_existe(
     capsys,
     monkeypatch,
@@ -102,6 +107,7 @@ def test_main_no_copia_si_el_destino_ya_existe(
         str(origen),  # Ruta que se va a analizar
         "s",           # Aceptar la copia
         str(destino),  # Destino que ya existe
+        "",            # Usar ubicación predeterminada del informe
     ])
 
     monkeypatch.setattr(
@@ -117,4 +123,66 @@ def test_main_no_copia_si_el_destino_ya_existe(
     assert archivo_existente.read_text(encoding="utf-8") == "contenido previo"
     assert (origen / "foto.jpg").read_bytes() == b"foto original"
     assert not (destino / "foto.jpg").exists()
+
+
+def test_main_informa_error_si_la_ubicacion_del_informe_no_existe(
+    capsys,
+    monkeypatch,
+    tmp_path,
+):
+    origen = tmp_path / "origen"
+    origen.mkdir()
+    (origen / "foto.jpg").write_bytes(b"foto original")
+
+    ubicacion_inexistente = tmp_path / "carpeta_inexistente"
+
+    respuestas = iter([
+        str(origen),                 # Ruta que se va a analizar
+        "n",                          # No realizar la copia
+        str(ubicacion_inexistente),  # Ubicación del informe
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(respuestas),
+    )
+
+    main()
+
+    salida = capsys.readouterr().out
+
+    assert "No se pudo generar el informe Excel:" in salida
+    assert not ubicacion_inexistente.exists()
+    assert (origen / "foto.jpg").read_bytes() == b"foto original"
+
+
+def test_main_rechaza_ubicacion_del_informe_dentro_del_origen(
+    capsys,
+    monkeypatch,
+    tmp_path,
+):
+    origen = tmp_path / "origen"
+    origen.mkdir()
+    (origen / "foto.jpg").write_bytes(b"foto original")
+
+    ubicacion_interna = origen / "informes"
+
+    respuestas = iter([
+        str(origen),                 # Ruta que se va a analizar
+        "n",                          # No realizar la copia
+        str(ubicacion_interna),      # Ubicación dentro del origen
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(respuestas),
+    )
+
+    main()
+
+    salida = capsys.readouterr().out
+
+    assert "La ubicación del informe debe estar fuera" in salida
+    assert not ubicacion_interna.exists()
+    assert (origen / "foto.jpg").read_bytes() == b"foto original"
     
