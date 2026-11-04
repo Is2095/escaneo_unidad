@@ -50,10 +50,11 @@ def validar_ubicacion_informe(
 
 def crear_ruta_informe(ubicacion_base, momento=None):
     """
-    Crea una carpeta para el informe junto a la ubicación indicada
-    y devuelve la ruta del archivo Excel con fecha y hora.
+    Crea una carpeta exclusiva para una ejecución del escaneo
+    dentro de la ubicación base y devuelve la ruta del informe Excel.
 
-    No modifica el contenido de la ubicación base.
+    Si ya existe una carpeta con el mismo nombre, agrega un sufijo
+    para evitar sobrescribir resultados anteriores.
     """
 
     base = Path(ubicacion_base).resolve()
@@ -66,24 +67,26 @@ def crear_ruta_informe(ubicacion_base, momento=None):
     fecha = momento or datetime.now()
 
     marca_tiempo = fecha.strftime("%Y-%m-%d_%H-%M-%S")
-    fecha_carpeta = fecha.strftime("%Y-%m-%d")
+    nombre_carpeta = f"ESCANEO_{marca_tiempo}"
 
-    carpeta_base = base.parent
-    nombre_carpeta = f"Informes_escaneo_{fecha_carpeta}"
-    carpeta_informes = carpeta_base / nombre_carpeta
+    sufijo = 0
 
-    sufijo = 1
+    while True:
+        if sufijo == 0:
+            carpeta_escaneo = base / nombre_carpeta
+        else:
+            carpeta_escaneo = (
+                base / f"{nombre_carpeta}_{sufijo:02d}"
+            )
 
-    while carpeta_informes.exists():
-        carpeta_informes = (
-            carpeta_base / f"{nombre_carpeta}_{sufijo:02d}"
-        )
-        sufijo += 1
-
-    carpeta_informes.mkdir()
+        try:
+            carpeta_escaneo.mkdir()
+            break
+        except FileExistsError:
+            sufijo += 1
 
     ruta_excel = (
-        carpeta_informes
+        carpeta_escaneo
         / f"informe_escaneo_{marca_tiempo}.xlsx"
     )
 

@@ -226,6 +226,8 @@ def test_main_usa_ubicacion_predeterminada_del_informe(
     assert len(ubicaciones_informe) == 1
     assert (
         Path(ubicaciones_informe[0]).resolve()
-        == ruta_origen.resolve()
-    )     
-
+        == (
+            Path(modulo_main.__file__).resolve().parent.parent
+            / "Informes_escaneo"
+        ).resolve()
+    )

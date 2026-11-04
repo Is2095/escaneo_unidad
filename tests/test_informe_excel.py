@@ -10,33 +10,39 @@ from src.informe_excel import (
   )
 
 
+
 def test_crea_carpeta_y_nombre_del_informe(tmp_path):
-    origen = tmp_path / "Fotos"
-    origen.mkdir()
+    ubicacion_base = tmp_path / "Informes_escaneo"
+    ubicacion_base.mkdir()
 
     momento = datetime(2026, 10, 12, 15, 30, 45)
 
-    ruta = crear_ruta_informe(origen, momento)
+    ruta = crear_ruta_informe(ubicacion_base, momento)
 
     assert ruta.parent.is_dir()
-    assert ruta.parent.parent == tmp_path
-    assert ruta.parent.name == "Informes_escaneo_2026-10-12"
+    assert ruta.parent.parent == ubicacion_base
+    assert ruta.parent.name == "ESCANEO_2026-10-12_15-30-45"
     assert ruta.name == "informe_escaneo_2026-10-12_15-30-45.xlsx"
     assert not ruta.exists()
 
 
 def test_no_sobrescribe_una_carpeta_de_informes_existente(tmp_path):
-    origen = tmp_path / "Fotos"
-    origen.mkdir()
+    ubicacion_base = tmp_path / "Informes_escaneo"
+    ubicacion_base.mkdir()
 
     momento = datetime(2026, 10, 12, 15, 30, 45)
 
-    primera_ruta = crear_ruta_informe(origen, momento)
-    segunda_ruta = crear_ruta_informe(origen, momento)
+    primera_ruta = crear_ruta_informe(ubicacion_base, momento)
+    segunda_ruta = crear_ruta_informe(ubicacion_base, momento)
 
-    assert primera_ruta.parent.name == "Informes_escaneo_2026-10-12"
-    assert segunda_ruta.parent.name == "Informes_escaneo_2026-10-12_01"
+    assert primera_ruta.parent.name == "ESCANEO_2026-10-12_15-30-45"
+    assert segunda_ruta.parent.name == "ESCANEO_2026-10-12_15-30-45_01"
     assert primera_ruta.parent != segunda_ruta.parent
+
+    assert primera_ruta.parent.is_dir()
+    assert segunda_ruta.parent.is_dir()
+    assert not primera_ruta.exists()
+    assert not segunda_ruta.exists()
 
 
 def test_rechaza_una_ruta_inexistente(tmp_path):
@@ -46,6 +52,7 @@ def test_rechaza_una_ruta_inexistente(tmp_path):
         crear_ruta_informe(origen)
 
     assert not origen.exists()
+
 
 def test_rechaza_una_ruta_que_es_un_archivo(tmp_path):
     archivo = tmp_path / "archivo.txt"
